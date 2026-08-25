@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LibCore - Library Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brand:{500:'#6366f1',600:'#4f46e5'}}}}}</script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex antialiased selection:bg-indigo-500 selection:text-white">
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     LOGIN / SIGN UP AUTHENTICATION OVERLAY SCREEN
+     ════════════════════════════════════════════════════════════════════════════ -->
+<div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-4 overflow-y-auto transition-all duration-300">
+  <div class="w-full max-w-md my-auto">
+    <!-- Brand Header -->
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center shadow-2xl shadow-indigo-500/40 mx-auto mb-3 border border-indigo-400/20">
+        <i data-lucide="library" class="w-8 h-8 text-white"></i>
+      </div>
+      <h1 class="text-2xl font-black text-white tracking-tight">LibCore LMS</h1>
+      <p class="text-xs text-indigo-400 font-semibold tracking-wide uppercase mt-0.5">Database Management System</p>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="glass-card rounded-3xl p-7 border border-slate-700/60 shadow-2xl space-y-5">
+      <!-- Toggle Tabs: Sign In / Sign Up -->
+      <div class="flex items-center p-1 bg-slate-900/90 rounded-2xl border border-slate-800">
+        <button id="tab-btn-signin" onclick="switchAuthMode('signin')" type="button" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md">
+          Sign In
+        </button>
+        <button id="tab-btn-signup" onclick="switchAuthMode('signup')" type="button" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+          Create Account (Sign Up)
+        </button>
+      </div>
+
+      <!-- ── FORM 1: SIGN IN ──────────────────────────────────────────────── -->
+      <form id="form-signin" onsubmit="handleSignIn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+            <input type="email" id="signin-email" required placeholder="name@domain.com" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+            <input type="password" id="signin-password" required placeholder="Enter password" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Sign In</span>
+        </button>
+      </form>
+
+      <!-- ── FORM 2: SIGN UP (CREATE ACCOUNT) ─────────────────────────────── -->
+      <form id="form-signup" onsubmit="handleSignUp(event)" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+            <input type="text" id="signup-name" required placeholder="e.g. Youssef Mohamed" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+            <input type="email" id="signup-email" required placeholder="youssef@gmail.com" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Phone (11 digits)</label>
+          <div class="relative">
+            <i data-lucide="phone" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+            <input type="text" id="signup-phone" required placeholder="01012345678" pattern="01[0-9]{9}" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Role / Account Type</label>
+            <select id="signup-role" required class="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="Student">Student Member</option>
+              <option value="Librarian">Librarian Staff</option>
+              <option value="Admin">Admin / Management</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Create Password</label>
+            <input type="password" id="signup-password" required placeholder="••••••••" minlength="4" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 mt-2">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Create Account</span>
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-slate-500 mt-4 font-medium">Database Team Project &bull; 2026</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     MAIN APPLICATION (SIDEBAR + MAIN VIEW)
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- SIDEBAR -->
+<aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 fixed h-full z-30">
+  <div>
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-3 py-4 mb-4 border-b border-slate-800">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+        <i data-lucide="library" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-base text-white leading-tight">LibCore DB</h1>
+        <p class="text-xs text-indigo-400 font-medium">Management System</p>
+      </div>
+    </div>
+
+    <!-- Navigation links -->
+    <nav class="space-y-1" id="sidebar-nav">
+      <button onclick="switchTab('dashboard')"  id="nav-dashboard"  class="nav-link active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span id="nav-dashboard-title">Dashboard</span></button>
+      <button onclick="switchTab('books')"      id="nav-books"      class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="book-open" class="w-4 h-4"></i><span>Books Catalog</span><span id="badge-total-books" class="ml-auto text-xs bg-slate-800 text-indigo-300 px-2 py-0.5 rounded-full font-semibold">0</span></button>
+      <button onclick="switchTab('loans')"      id="nav-loans"      class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="repeat" class="w-4 h-4"></i><span id="nav-loans-title">Circulation</span><span id="badge-active-loans" class="ml-auto text-xs bg-amber-950/70 text-amber-400 border border-amber-800/60 px-2 py-0.5 rounded-full">0</span></button>
+      
+      <!-- Staff & Admin only tabs -->
+      <button onclick="switchTab('members')"    id="nav-members"    class="staff-only-tab nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="users" class="w-4 h-4"></i><span>Members</span></button>
+      <button onclick="switchTab('staff')"      id="nav-staff"      class="staff-only-tab nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="badge-check" class="w-4 h-4"></i><span>Staff</span></button>
+      <button onclick="switchTab('sql-runner')" id="nav-sql-runner" class="staff-only-tab nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60"><i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i><span class="text-emerald-300">SQL Lab</span><span class="ml-auto text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.5 rounded font-mono">Live</span></button>
+    </nav>
+  </div>
+
+  <div class="space-y-3 pt-4 border-t border-slate-800">
+    <!-- Active Logged-In User Card -->
+    <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div id="sidebar-user-avatar" class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">BB</div>
+        <div class="min-w-0">
+          <p id="sidebar-user-name" class="text-xs font-bold text-white truncate">Bassant Bakry</p>
+          <p id="sidebar-user-role" class="text-[10px] text-indigo-300 truncate font-medium">Head Librarian</p>
+        </div>
+      </div>
+      <button onclick="logout()" title="Sign Out" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+    </div>
+
+    <!-- DB status (Staff/Admin only) -->
+    <div id="sidebar-db-config" class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[11px] text-slate-400 font-medium">DB Connection</span>
+        <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="db-status-text">Supabase Live</span>
+        </span>
+      </div>
+      <button onclick="openModal('modal-settings')" class="w-full text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center justify-center gap-1 py-0.5 font-medium transition"><i data-lucide="settings" class="w-3 h-3"></i><span>Configure Supabase</span></button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="flex-1 ml-64 p-8 overflow-y-auto min-h-screen">
+  <!-- Header -->
+  <header class="flex items-center justify-between pb-6 border-b border-slate-800 mb-8">
+    <div>
+      <h2 id="page-title"    class="text-2xl font-bold tracking-tight text-white">Dashboard</h2>
+      <p  id="page-subtitle" class="text-sm text-slate-400 mt-0.5">Library operations overview</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Admin / Staff Only Action Buttons -->
+      <div id="admin-header-actions" class="flex items-center gap-3">
+        <button onclick="openModal('modal-borrow')"   class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 transition"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>Borrow Book</span></button>
+        <button onclick="openModal('modal-add-book')" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold border border-slate-700 transition"><i data-lucide="book-plus" class="w-4 h-4"></i><span>Add Book</span></button>
+      </div>
+
+      <!-- Logout Header button -->
+      <button onclick="logout()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 text-xs font-semibold border border-slate-700/80 hover:border-rose-700/60 transition">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- DASHBOARD TAB -->
+  <section id="tab-dashboard" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="glass-card rounded-2xl p-5"><div class="flex items-center justify-between"><span id="stat-card-1-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Titles</span><div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center"><i data-lucide="book" class="w-4 h-4"></i></div></div><div class="mt-3"><span id="stat-total-books" class="text-3xl font-extrabold text-white">0</span><span id="stat-card-1-sub" class="text-xs text-slate-400 ml-1">in library</span></div></div>
+      <div class="glass-card rounded-2xl p-5"><div class="flex items-center justify-between"><span id="stat-card-2-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Copies</span><div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center"><i data-lucide="copy" class="w-4 h-4"></i></div></div><div class="mt-3"><span id="stat-total-copies" class="text-3xl font-extrabold text-white">0</span><span class="text-xs text-emerald-400 ml-2 font-medium"><span id="stat-available-copies">0</span> Available</span></div></div>
+      <div class="glass-card rounded-2xl p-5"><div class="flex items-center justify-between"><span id="stat-card-3-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Loans</span><div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4"></i></div></div><div class="mt-3"><span id="stat-active-loans" class="text-3xl font-extrabold text-amber-400">0</span><span id="stat-card-3-sub" class="text-xs text-slate-400 ml-1">borrowed now</span></div></div>
+      <div class="glass-card rounded-2xl p-5"><div class="flex items-center justify-between"><span id="stat-card-4-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Fines</span><div class="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center"><i data-lucide="dollar-sign" class="w-4 h-4"></i></div></div><div class="mt-3"><span id="stat-total-fines" class="text-3xl font-extrabold text-rose-400">$0.00</span><span id="stat-card-4-sub" class="text-xs text-slate-400 ml-1">collected</span></div></div>
+    </div>
+    
+    <div id="dashboard-charts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 glass-card rounded-2xl p-6"><h3 class="font-bold text-base text-white mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-400"></i>Loan Activity by Status</h3><div class="h-64"><canvas id="circulationChart"></canvas></div></div>
+      <div class="glass-card rounded-2xl p-6"><h3 class="font-bold text-base text-white mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-violet-400"></i>Books by Category</h3><div class="h-64 flex items-center justify-center"><canvas id="categoryChart"></canvas></div></div>
+    </div>
+
+    <div class="glass-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4"><div><h3 id="recent-table-title" class="font-bold text-base text-white">Recent Transactions</h3><p id="recent-table-sub" class="text-xs text-slate-400">Latest borrowing events</p></div><button onclick="switchTab('loans')" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300">View All &rarr;</button></div>
+      <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="text-xs uppercase text-slate-400 bg-slate-800/50 border-y border-slate-700/50"><tr><th class="py-3 px-4">Loan ID</th><th class="py-3 px-4">Book Title</th><th class="py-3 px-4">Member</th><th class="py-3 px-4">Loan Date</th><th class="py-3 px-4">Status</th><th class="py-3 px-4">Fine</th></tr></thead><tbody id="recent-loans-tbody" class="divide-y divide-slate-800"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- BOOKS TAB -->
+  <section id="tab-books" class="hidden space-y-6">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 glass-card p-4 rounded-2xl">
+      <div class="relative w-full sm:w-80"><i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i><input type="text" id="books-search-input" onkeyup="filterBooks()" placeholder="Search by title, isbn, author..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500"></div>
+      <div class="flex items-center gap-3">
+        <select id="books-category-filter" onchange="filterBooks()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none"><option value="all">All Categories</option></select>
+        <button id="btn-add-book-catalog" onclick="openModal('modal-add-book')" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition"><i data-lucide="plus" class="w-4 h-4"></i><span>Add Book</span></button>
+      </div>
+    </div>
+    <div id="books-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </section>
+
+  <!-- LOANS TAB -->
+  <section id="tab-loans" class="hidden space-y-6">
+    <div class="flex items-center justify-between glass-card p-4 rounded-2xl">
+      <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700"><button onclick="filterLoansTab('active')" id="btn-loans-active" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white">Active</button><button onclick="filterLoansTab('returned')" id="btn-loans-returned" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">Returned</button><button onclick="filterLoansTab('all')" id="btn-loans-all" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">All</button></div>
+      <button id="btn-new-loan-tab" onclick="openModal('modal-borrow')" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition"><i data-lucide="plus" class="w-4 h-4"></i><span>New Loan</span></button>
+    </div>
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="text-xs uppercase text-slate-400 bg-slate-800 border-b border-slate-700"><tr><th class="py-3.5 px-4">Loan ID</th><th class="py-3.5 px-4">Book</th><th class="py-3.5 px-4">Member</th><th class="py-3.5 px-4">Staff</th><th class="py-3.5 px-4">Loan Date</th><th class="py-3.5 px-4">Due Date</th><th class="py-3.5 px-4">Returned</th><th class="py-3.5 px-4">Status</th><th class="py-3.5 px-4">Fine</th><th id="loans-th-action" class="py-3.5 px-4 text-center">Actions</th></tr></thead><tbody id="loans-full-tbody" class="divide-y divide-slate-800"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- MEMBERS TAB (STAFF ONLY) -->
+  <section id="tab-members" class="hidden space-y-6">
+    <div class="flex items-center justify-between glass-card p-4 rounded-2xl">
+      <div class="relative w-80"><i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i><input type="text" id="members-search-input" onkeyup="filterMembers()" placeholder="Search by name, phone, email..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500"></div>
+      <button onclick="openModal('modal-add-member')" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition"><i data-lucide="user-plus" class="w-4 h-4"></i><span>Register Member</span></button>
+    </div>
+    <div class="glass-card rounded-2xl overflow-hidden"><table class="w-full text-left text-sm"><thead class="text-xs uppercase text-slate-400 bg-slate-800 border-b border-slate-700"><tr><th class="py-3.5 px-4">ID</th><th class="py-3.5 px-4">Full Name</th><th class="py-3.5 px-4">Phone</th><th class="py-3.5 px-4">Email</th><th class="py-3.5 px-4">Joined</th><th class="py-3.5 px-4 text-center">Loans</th><th class="py-3.5 px-4 text-center">Actions</th></tr></thead><tbody id="members-tbody" class="divide-y divide-slate-800"></tbody></table></div>
+  </section>
+
+  <!-- STAFF TAB (STAFF ONLY) -->
+  <section id="tab-staff" class="hidden">
+    <div id="staff-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </section>
+
+  <!-- SQL LAB TAB (STAFF / ADMIN ONLY - INTERACTIVE TERMINAL) -->
+  <section id="tab-sql-runner" class="hidden space-y-6">
+    <div class="glass-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="terminal" class="w-5 h-5 text-emerald-400"></i>
+            <span>Interactive SQL Terminal &amp; Queries Lab</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Write custom queries or run course presets with live execution &mdash; press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-[10px] border border-slate-700">Ctrl + Enter</kbd> to run</p>
+        </div>
+        <span class="text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Live SQL Engine</span>
+        </span>
+      </div>
+
+      <!-- Course Presets (Click to insert into console) -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">⚡ Course Required Presets (Click to load into editor):</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <button onclick="loadPresetQuery('books_publishers')"     class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">1. INNER JOIN (Books &amp; Pub)</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <button onclick="loadPresetQuery('author_books')"          class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">2. LEFT JOIN (Authors)</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <button onclick="loadPresetQuery('books_per_category')"   class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">3. GROUP BY &amp; HAVING</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <button onclick="loadPresetQuery('active_loans_detailed')" class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">4. Multi-Table JOIN (4 Tables)</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <button onclick="loadPresetQuery('fines_per_member')"     class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">5. SUM &amp; Aggregates</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+          <button onclick="loadPresetQuery('staff_performance')"    class="text-left p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-950/50 border border-slate-700/80 hover:border-indigo-500/80 transition flex items-center justify-between"><span class="text-xs font-bold text-indigo-300">6. Staff Activity Grouping</span><i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-slate-500"></i></button>
+        </div>
+      </div>
+
+      <!-- Table Badges for Quick Insertion -->
+      <div class="flex items-center gap-1.5 flex-wrap mb-2 text-xs text-slate-400">
+        <span class="text-slate-500 font-semibold mr-1">Quick Select Tables:</span>
+        <button onclick="insertTableQuery('Book')"       class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Book</button>
+        <button onclick="insertTableQuery('Members')"    class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Members</button>
+        <button onclick="insertTableQuery('Loan')"       class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Loan</button>
+        <button onclick="insertTableQuery('Staff')"      class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Staff</button>
+        <button onclick="insertTableQuery('Publisher')"  class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Publisher</button>
+        <button onclick="insertTableQuery('Author')"     class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Author</button>
+        <button onclick="insertTableQuery('Category')"   class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Category</button>
+        <button onclick="insertTableQuery('Bookcopy')"   class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-mono border border-slate-700">Bookcopy</button>
+      </div>
+
+      <!-- EDITABLE SQL COMMAND CONSOLE -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+          <span class="font-mono flex items-center gap-1.5"><i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400"></i><span>SQL Command Console:</span></span>
+          <div class="flex items-center gap-2">
+            <button onclick="clearSQLEditor()" class="text-xs text-slate-400 hover:text-rose-300 px-2 py-1 rounded-lg hover:bg-slate-800 transition flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i><span>Clear</span></button>
+            <button onclick="executeCustomQuery()" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition"><i data-lucide="play" class="w-3.5 h-3.5"></i><span>Run Query (Ctrl+Enter)</span></button>
+          </div>
+        </div>
+        <textarea id="sql-code-input" onkeydown="handleSQLKeyDown(event)" rows="5" class="w-full bg-slate-950 p-4 rounded-xl text-emerald-400 font-mono text-xs border border-slate-700/80 focus:outline-none focus:border-emerald-500 shadow-inner resize-y leading-relaxed" spellcheck="false" placeholder="Write any SQL command here...&#10;e.g. INSERT INTO Members (name, phone, email) VALUES ('Youssef', '01012345678', 'y@gmail.com');&#10;or SELECT * FROM Book WHERE pub_year > 2005;"></textarea>
+      </div>
+
+      <!-- RESULTS TABLE -->
+      <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-md">
+        <div class="p-3 bg-slate-800/60 border-b border-slate-700 flex items-center justify-between">
+          <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="table" class="w-3.5 h-3.5 text-indigo-400"></i><span>Query Execution Results</span></span>
+          <span id="query-row-count" class="text-xs text-emerald-400 font-mono font-semibold">0 rows returned</span>
+        </div>
+        <div class="overflow-x-auto max-h-80"><table class="w-full text-left text-xs"><thead id="sql-results-thead" class="text-slate-400 bg-slate-800/40"></thead><tbody id="sql-results-tbody" class="divide-y divide-slate-800"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     MODALS
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- MODAL: Borrow -->
+<div id="modal-borrow" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Record New Loan</h3><button onclick="closeModal('modal-borrow')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-borrow" onsubmit="submitBorrow(event)" class="space-y-4">
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Member</label><select id="borrow-member" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Available Book Copy</label><select id="borrow-bookcopy" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Handled By (Staff)</label><select id="borrow-staff" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Loan Date</label><input type="date" id="borrow-loan-date" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Due Date</label><input type="date" id="borrow-due-date" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      </div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-borrow')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Confirm Loan</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Return -->
+<div id="modal-return" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Return Book &amp; Calculate Fine</h3><button onclick="closeModal('modal-return')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-return" onsubmit="submitReturn(event)" class="space-y-4">
+      <input type="hidden" id="return-loan-id">
+      <div class="p-3 bg-slate-800 rounded-xl text-xs space-y-1.5">
+        <p class="text-slate-400">Book: <span id="return-book-title" class="font-bold text-white"></span></p>
+        <p class="text-slate-400">Member: <span id="return-member-name" class="font-bold text-indigo-300"></span></p>
+        <p class="text-slate-400">Due Date: <span id="return-due-date" class="font-bold text-amber-300"></span></p>
+      </div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Return Date</label><input type="date" id="return-date-input" onchange="calculateFineLive()" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-between"><span class="text-xs text-slate-300 font-medium">Overdue Fine ($5/day):</span><span id="return-fine-display" class="text-base font-bold text-emerald-400">$0.00</span></div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-return')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold">Complete Return</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Add Book -->
+<div id="modal-add-book" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Add New Book</h3><button onclick="closeModal('modal-add-book')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-add-book" onsubmit="submitAddBook(event)" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Book ID</label><input type="text" id="add-book-id" placeholder="b08" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">ISBN</label><input type="text" id="add-book-isbn" placeholder="978-08" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      </div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Title</label><input type="text" id="add-book-title" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Author</label><select id="add-book-author" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Category</label><select id="add-book-category" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Publisher</label><select id="add-book-publisher" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></select></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Year</label><input type="number" id="add-book-year" value="2024" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Language</label><input type="text" id="add-book-lang" value="English" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      </div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-add-book')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Save Book</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Edit Book -->
+<div id="modal-edit-book" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Edit Book Details</h3><button onclick="closeModal('modal-edit-book')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-edit-book" onsubmit="submitEditBook(event)" class="space-y-3">
+      <input type="hidden" id="edit-book-id">
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Title</label><input type="text" id="edit-book-title" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">ISBN</label><input type="text" id="edit-book-isbn" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+        <div><label class="block text-xs font-semibold text-slate-300 mb-1">Publish Year</label><input type="number" id="edit-book-year" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      </div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Language</label><input type="text" id="edit-book-lang" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-edit-book')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Save Changes</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Add Member -->
+<div id="modal-add-member" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Register New Member</h3><button onclick="closeModal('modal-add-member')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-add-member" onsubmit="submitAddMember(event)" class="space-y-3">
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label><input type="text" id="add-member-name" placeholder="Mohamed Ali" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Phone (starts with 01)</label><input type="text" id="add-member-phone" placeholder="01012345678" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Email</label><input type="email" id="add-member-email" placeholder="user@gmail.com" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-add-member')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Save Member</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Edit Member -->
+<div id="modal-edit-member" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Edit Member Details</h3><button onclick="closeModal('modal-edit-member')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <form id="form-edit-member" onsubmit="submitEditMember(event)" class="space-y-3">
+      <input type="hidden" id="edit-member-id">
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label><input type="text" id="edit-member-name" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Phone</label><input type="text" id="edit-member-phone" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Email</label><input type="email" id="edit-member-email" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800"><button type="button" onclick="closeModal('modal-edit-member')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Cancel</button><button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Save Changes</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Settings -->
+<div id="modal-settings" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 modal-enter">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4"><h3 class="font-bold text-lg text-white">Connect Supabase Cloud DB</h3><button onclick="closeModal('modal-settings')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <div class="space-y-4">
+      <div class="p-3 bg-indigo-950/40 border border-indigo-800/40 rounded-xl text-xs text-indigo-300 leading-relaxed">Paste your Supabase Project URL and Anon Key to connect to the live cloud database. Leave empty to continue with local in-memory state.</div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Supabase Project URL</label><input type="text" id="supabase-url-input" placeholder="https://xxxx.supabase.co" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div><label class="block text-xs font-semibold text-slate-300 mb-1">Supabase Anon Key</label><input type="text" id="supabase-key-input" placeholder="eyJhbGciOi..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"></div>
+      <div class="pt-4 flex items-center justify-between border-t border-slate-800">
+        <button onclick="resetToLocal()" class="text-xs font-semibold text-slate-400 hover:text-rose-400 transition">Use Local Mode</button>
+        <div class="flex items-center gap-2"><button onclick="closeModal('modal-settings')" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white">Close</button><button onclick="saveSupabase()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Save &amp; Connect</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
